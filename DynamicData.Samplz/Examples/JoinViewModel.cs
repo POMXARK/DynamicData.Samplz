@@ -20,25 +20,25 @@ namespace DynamicData.Samplz.Examples
 
         public JoinManyViewModel()
         {
-            ReadOnlyObservableCollection<ParentWithChildrenProxy> data;
+            //ReadOnlyObservableCollection<ParentWithChildrenProxy> data;
             
-            var parentsWithChildren = _people.Connect()
-                .LeftJoinMany(_relations.Connect(), r => r.Parent.Name, (person, children) =>
-                {
-                    return new ParentWithChildren(person, children.Items.Select(c=>c.Child).ToArray());
-                })
-                //from this point, the operators are required only for presentation purposes 
-                .Transform(pwc=> new ParentWithChildrenProxy(pwc, async x => await EditPerson(x)))
-                .Sort(SortExpressionComparer<ParentWithChildrenProxy>.Ascending(p=>p.Parent.Age))
-                .ObserveOnDispatcher()
-                .Bind(out data)
-                .Subscribe();
+            //var parentsWithChildren = _people.Connect()
+            //    .LeftJoinMany(_relations.Connect(), r => r.Parent.Name, (person, children) =>
+            //    {
+            //        return new ParentWithChildren(person, children.Items.Select(c=>c.Child).ToArray());
+            //    })
+            //    //from this point, the operators are required only for presentation purposes 
+            //    .Transform(pwc=> new ParentWithChildrenProxy(pwc, async x => await EditPerson(x)))
+            //    .Sort(SortExpressionComparer<ParentWithChildrenProxy>.Ascending(p=>p.Parent.Age))
+            //    .ObserveOnDispatcher()
+            //    .Bind(out data)
+            //    .Subscribe();
 
-            Data = data;
+            //Data = data;
 
-            LoadInitialData();
+            //LoadInitialData();
 
-            _cleanUp = new CompositeDisposable(parentsWithChildren, _people, _relations);
+            //_cleanUp = new CompositeDisposable(parentsWithChildren, _people, _relations);
         }
 
         private async Task EditPerson(ParentWithChildren parentWithChildren)

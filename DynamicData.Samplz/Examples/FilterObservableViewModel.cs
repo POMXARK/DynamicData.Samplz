@@ -11,35 +11,20 @@ namespace DynamicData.Samplz.Examples
 {
     public class FilterObservableViewModel
     {
-        private readonly IDisposable _cleanUp;
 
         private readonly ReadOnlyObservableCollection<FootballPlayer> _availablePlayers;
 
-        private readonly ReadOnlyObservableCollection<FootballPlayer> _myTeamPeople;
 
         public ReadOnlyObservableCollection<FootballPlayer> AvailablePlayers => _availablePlayers;
-        public ReadOnlyObservableCollection<FootballPlayer> MyTeam => _myTeamPeople;
 
         public FilterObservableViewModel()
         {
-            var people = CreateFootballerList();
-            var sharedDataSoure = people.Connect().Publish();
-
             //Load available players
-            var allPeopleLoader = sharedDataSoure
+            CreateFootballerList().Connect()
                 .FilterOnObservable(person => person.IncludedChanged, included => !included)
                 .ObserveOnDispatcher()
                 .Bind(out _availablePlayers)
                 .Subscribe();
-
-            //oad selected players
-            var includedPeopleLoader = sharedDataSoure
-                .FilterOnObservable(person => person.IncludedChanged, included => included)
-                .ObserveOnDispatcher()
-                .Bind(out _myTeamPeople)
-                .Subscribe();
-            
-            _cleanUp = new CompositeDisposable(people, allPeopleLoader, includedPeopleLoader, sharedDataSoure.Connect());
         }
 
         private ISourceList<FootballPlayer> CreateFootballerList()
@@ -50,38 +35,8 @@ namespace DynamicData.Samplz.Examples
                 new FootballPlayer("Hennessey"),
                 new FootballPlayer("Chester"),
                 new FootballPlayer("Williams"),
-                new FootballPlayer("Davies"),
-                new FootballPlayer("Gunter"),
-                new FootballPlayer("Allen"),
-                new FootballPlayer("Ledley"),
-                new FootballPlayer("Ramsey"),
-                new FootballPlayer("Taylor"),
-                new FootballPlayer("Bale"),
-                new FootballPlayer("King"),
-                new FootballPlayer("Hennessey"),
-                new FootballPlayer("Collins"),
-
-                new FootballPlayer("Courtois"),
-                new FootballPlayer("Meunier"),
-                new FootballPlayer("Alderweireld"),
-                new FootballPlayer("Denayer"),
-                new FootballPlayer("J Lukaku"),
-                new FootballPlayer("Nainggolan"),
-                new FootballPlayer("Witsel"),
-                new FootballPlayer("Carrasco"),
-                new FootballPlayer("De Bruyne"),
-                new FootballPlayer("Hazard"),
-                new FootballPlayer("R Lukaku"),
-                new FootballPlayer("Merten"),
-                new FootballPlayer("Fellain"),
-                new FootballPlayer("Batshuayiat"),
             });
             return people;
-        }
-
-        public void Dispose()
-        {
-            _cleanUp.Dispose();
         }
     }
 
@@ -89,7 +44,6 @@ namespace DynamicData.Samplz.Examples
     {
         public string Name { get;  }
         public ICommand IncludeCommand { get; }
-        public ICommand ExcludeCommand { get; }
         public IObservable<bool> IncludedChanged { get; }
 
         public FootballPlayer(string name )
@@ -98,48 +52,55 @@ namespace DynamicData.Samplz.Examples
 
             Name = name;
             IncludeCommand = new Command(() => includeChanged.OnNext(true));
-            ExcludeCommand = new Command(() => includeChanged.OnNext(false));
             IncludedChanged = includeChanged.AsObservable();
         }
     }
 
     public static class DynamicDataEx
     {
+        // Собственный реактивный метод
         public static IObservable<IChangeSet<TObject>> FilterOnObservable<TObject, TValue>(this IObservable<IChangeSet<TObject>> source, 
             Func<TObject, IObservable<TValue>> observableSelector,
             Func<TValue, bool> predicate)
         {
             return Observable.Create<IChangeSet<TObject>>(observer =>
             {
-                var locker = new object();
 
                 //create a local list to store matching values
+                //создаем локальный список для хранения совпадающих значений
                 var resultList = new SourceList<TObject>();
 
                 //monitor whether the observable has changed and amend local list accordingly
-                var observableChangedMonitor = source.SubscribeMany(item =>
+                //отслеживаем, изменился ли наблюдаемый объект, и вносим соответствующие изменения в локальный список
+                source.SubscribeMany(item =>
                 {
-                    return observableSelector(item).Synchronize(locker)
+                    return observableSelector(item)
                         .Subscribe(value =>
                         {
+
                             var isMatched = predicate(value);
                             if (isMatched)
                             {
                                 //prevent duplicates with contains check - otherwise use a source cache
+                                //предотвратить дубликаты с проверкой содержимого - в противном случае используйте исходный кеш
                                 if (!resultList.Items.Contains(item))
+                                {
+                                    // Заполнение начального списка
                                     resultList.Add(item);
+                                }
+
                             }
                             else
                             {
+                                // Удаление после нажатия на кнопку - кнопка привязана к команде
                                 resultList.Remove(item);
                             }
                         });
-                }).Subscribe(t=> {}, observer.OnError);
+                }).Subscribe();
 
-                //publish results from the local list
-                var publisher = resultList.Connect().SubscribeSafe(observer);
+                resultList.Connect().SubscribeSafe(observer);
 
-                return new CompositeDisposable(observableChangedMonitor, resultList, publisher);
+                return new CompositeDisposable();
 
             });
         }

@@ -31,7 +31,7 @@ namespace DynamicData.Samplz.Examples
             sourceList.AddRange(Enumerable.Range(1, 15).Select(i => new AggregationItem(i)));
 
             //Load items to display to user and allow them to include items or not
-         
+
             var listLoader = sourceList.Connect()
                 .Sort(SortExpressionComparer<AggregationItem>.Ascending(vm => vm.Number))
                 .ObserveOnDispatcher()
@@ -45,21 +45,21 @@ namespace DynamicData.Samplz.Examples
 
             //Do a custom aggregation (ToCollection() produces a readonly collection of underlying data)
             var sumOfOddNumbers = aggregatable.ToCollection()
-                .Select(collection => collection.Where(i => i.Number%2 == 1).Select(ai => ai.Number).Sum())
+                .Select(collection => collection.Where(i => i.Number % 2 == 1).Select(ai => ai.Number).Sum())
                 .Subscribe(sum => SumOfOddNumbers = sum);
-            
-            _cleanUp = new CompositeDisposable(sourceList, 
+
+            _cleanUp = new CompositeDisposable(sourceList,
                 listLoader,
                 aggregatable.Count().Subscribe(count => Count = count),
                 aggregatable.Sum(ai => ai.Number).Subscribe(sum => Sum = sum),
-                aggregatable.Avg(ai => ai.Number).Subscribe(average => Avg = Math.Round(average,2)),
+                aggregatable.Avg(ai => ai.Number).Subscribe(average => Avg = Math.Round(average, 2)),
                 aggregatable.Minimum(ai => ai.Number).Subscribe(max => Max = max),
                 aggregatable.Maximum(ai => ai.Number).Subscribe(min => Min = min),
                 aggregatable.StdDev(ai => ai.Number).Subscribe(std => StdDev = Math.Round(std, 2)),
                 sumOfOddNumbers,
                 aggregatable.Connect());
         }
-        
+
 
         public int Count
         {
@@ -96,7 +96,7 @@ namespace DynamicData.Samplz.Examples
             get { return _stdDev; }
             set { SetAndRaise(ref _stdDev, value); }
         }
-        
+
         public double Avg
         {
             get { return _avg; }
@@ -120,7 +120,7 @@ namespace DynamicData.Samplz.Examples
         public int Number { get; }
 
         private bool _includeInTotal = true;
-        
+
         public AggregationItem(int number)
         {
             Number = number;

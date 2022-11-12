@@ -17,17 +17,20 @@ namespace DynamicData.Samplz.Examples
 
         public SelectableItemsViewModel()
         {
+            // SourceList синхронная реактивная колекция 
             var sourceList = new SourceList<SimpleItem>();
-
+             
+            // генерация случайных данных // заполнение модели
             sourceList.AddRange(Enumerable.Range(1, 10).Select(i => new SimpleItem(i)));
 
-            //create a shared list of view models
+            //create a shared list of view models / создать общий список моделей представления
             var viewModels = sourceList
                 .Connect()
                 .Transform(simpleItem => new SimpleItemViewModel(simpleItem))
                 .Publish();
 
             //filter on items which are selected and populate into an observable collection
+            //фильтровать элементы, которые выбраны и заполняются наблюдаемой коллекцией
 
             var selectedLoader = viewModels
                 .FilterOnProperty(vm => vm.IsSelected, vm => vm.IsSelected)
@@ -37,6 +40,7 @@ namespace DynamicData.Samplz.Examples
                 .Subscribe();
 
             //filter on items which are not selected and populate into an observable collection
+            //фильтровать элементы, которые не выбраны, и заполнять наблюдаемую коллекцию
             var notSelectedLoader = viewModels
                 .FilterOnProperty(vm => vm.IsSelected, vm => !vm.IsSelected)
                 .Sort(SortExpressionComparer<SimpleItemViewModel>.Ascending(vm => vm.Number))
@@ -47,12 +51,13 @@ namespace DynamicData.Samplz.Examples
             _cleanUp = new CompositeDisposable(sourceList,  selectedLoader, notSelectedLoader, viewModels.Connect());
         }
 
-        public void Dispose()
+        public void Dispose()   
         {
             _cleanUp.Dispose();
         }
     }
 
+    /// не модель
     public class SimpleItemViewModel: AbstractNotifyPropertyChanged
     {
         private bool _isSelected;
@@ -72,6 +77,7 @@ namespace DynamicData.Samplz.Examples
         }
     }
 
+    // модель
     public class SimpleItem
     {
         public int Id { get;  }
